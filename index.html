@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+</head>
+<body>
+	<div id ="viewer" tabindex="1">
+		<svg />
+		<script>
+		"user strict";
+		
+		var STATES = {"MENU":0, "APP_STARTING":1, "APP_RUNNING":2, "APP_CLOSING":3};
+		var currentState = STATES.MENU;
+		d3.json("system.json", function(error, system) {
+			
+			// add key handler
+			d3.select("#viewer")
+				.on("keydown", response);
+				
+			// make the viewer element focused	
+			document.getElementById("viewer").focus();
+		
+			var background = system.interface.screen.background;
+			var width = system.interface.screen.width;
+			var height = system.interface.screen.height;
+			
+			var centerX = width/2;
+			var centerY = height/2;
+			
+			var svg = d3.select("svg")
+						.attr("width", width)
+						.attr("height", height);
+
+			var theme = system.theme.resources[system.theme.selectedIndex];
+			var font = theme.font;
+			
+			// create background screen
+			// the background is pretended to be the outside-world view
+			svg.append("image")
+				.attr("xlink:href", getDir()+"/"+background)
+				.attr("width", width)
+				.attr("height", height);
+				
+			// create status bar
+			var statusBarHeight = system.layout.statusBarHeight;
+			var timeXOffset = system.layout.statusBarTimeXOffset;
+			var timeY = system.layout.statusBarTimeY;
+			
+			svg.append("rect")
+				.attr("width", width)
+				.attr("height", statusBarHeight)
+				.attr("class", "transparent");
+				
+			// create time
+			var time = svg.append("text")
+						.text(getTime())
+						.attr("x", width-timeXOffset)
+						.attr("y", timeY)
+						.attr("fill", font.color);
+				
+			// set interval per second to update the time
+			setInterval(function(){time.transition().text(getTime());}, 1000);
+			
+			var x = width - timeXOffset;
+			var batteryTextXOffset = system.layout.statusBarBatteryTextXOffset;
+			
+			// create battery
+			svg.append("image")
+			.attr("xlink:href", getDir() + "/ui/battery.png")
+			.attr("x", x - statusBarHeight)
+			.attr("y", 0)
+			.attr("width", statusBarHeight)
+			.attr("height", statusBarHeight);
+			
+			x -= statusBarHeight;
+			
+			svg.append("text")
+			.text("100%")
+			.attr("x", x-batteryTextXOffset)
+			.attr("y", timeY)
+			.attr("fill", font.color);
+			
+			// check connectivity status
+			var connectivities = [];
+			var index = 0;
+			
+			if (system.connectivities.flightMode.isOn){
+				connectivities[index++] = "flightMode";
+			}
+			else {
+				if (system.connectivities.wifi){
+					connectivities[index++] = "wifi";
+				}
+			}
+			
+			x-= (batteryTextXOffset + statusBarHeight*connectivities.length);
+			
+			// draw all icons on the status bar
+			svg.selectAll("image")
+			.data(connectivities, function(d){return d;})
+			.enter()
+			.append("image")
+			.attr("xlink:href", function(d){return getDir() + "/ui/"+d+".png";})
+			.attr("x", function(v, i){ return x + i*statusBarHeight;})
+			.attr("y", 0)
+			.attr("width", statusBarHeight)
+			.attr("height", statusBarHeight);
+			
+			// =================================== MENU =================================== 
+			
+			var cornerR = system.layout.menuBarCornerRadius;
+			var menuMargin = system.layout.menuBarMargin;
+			var menuPadding = system.layout.menuBarPadding;
+			var menuDoublePadding = menuPadding*2;
+			
+			var systemIconSize = system.interface.icon.size;
+			var halfIconSize = systemIconSize/2;
+			
+			var maxIcons = system.layout.menuBarTotalMaxIcons;
+			
+			var menuX = width - menuMargin - 2*menuPadding - systemIconSize;
+			var menuY = statusBarHeight + menuMargin;
+			
+			var menuWidth = systemIconSize + 2*menuPadding;
+			var menuHeight = (systemIconSize + menuPadding)*maxIcons + menuPadding;
+			
+			var menuBar;
+			var menuSvg;
+			
+			var menuText;
+			
+			// app class
+			var AppInfo = function(type, name, image){
+				this.type = type;
+				this.name = name;
+				this.image = image;
+			}
+			
+			var appInfos = [];
+			var selected = 0;
+			
+			var appsRef = system.apps;
+			
+			showMenu();
+							
+			function showMenu(){
+				menuBar = svg.append("rect")
+						.attr("rx", cornerR)
+						.attr("ry", cornerR)
+						.attr("x", menuX)
+						.attr("y", menuY)
+						.attr("width", menuWidth)
+						.attr("height", menuHeight + menuPadding)
+						.attr("class", "transparent");
+
+				menuSvg = svg.append("svg")
+						.attr("x", menuX)
+						.attr("y", menuY + menuPadding)
+						.attr("width", menuWidth)
+						.attr("height", menuHeight - menuDoublePadding);
+						
+				for (i = 0; i < appsRef.length; i++){
+					var iconX = menuPadding;
+					var iconY = i*(menuPadding + systemIconSize);
+					
+					var iconSize = systemIconSize;
+					
+					if (i != selected){
+						iconX += iconSize*0.1;
+						iconY += iconSize*0.1;
+						iconSize *= 0.8;
+					}
+					else {
+						menuText = svg.append("text")
+								.text(toTitleCase(appsRef[i].name))
+								.attr("x", menuX + iconX + halfIconSize)
+								.attr("y", menuY + iconY + systemIconSize + menuDoublePadding)
+								.attr("text-anchor", "middle")
+								.attr("fill", "#000000");
+					}
+					
+					var image = menuSvg.append("image")
+									.attr("xlink:href", getDir()+"/apps/"+appsRef[i].name+".png")
+									.attr("x", iconX)
+									.attr("y", iconY)
+									.attr("width", iconSize)
+									.attr("height", iconSize);
+									
+					appInfos[i] = new AppInfo(appsRef[i].type, appsRef[i].name, image);
+				}
+				
+				moveAppHL(0);
+			}
+			
+			/**
+			* Hide the menu.
+			* This is usually call when the app is started.
+			*/
+			function hideMenu(){
+				for (i = 0; i < appInfos.length; i++){
+					appInfos[i].image.remove();
+				}
+				
+				menuText.remove();
+			
+				menuBar.remove();
+				menuSvg.remove();
+			}
+			
+			var appScript;
+			var app;
+			var appScreen;
+			
+			// ===================================== APP ===================================== 
+			
+			/**
+			* Load the selected app.
+			*/
+			function loadApp(){
+			
+				if (appsRef[selected].type == "user"){
+					// set the state
+					currentState = STATES.APP_STARTING;
+					
+					// hide menu
+					hideMenu();
+					
+					// load app script
+					appScript = d3.select("head")
+									.append("script")
+									.attr("type", "text/javascript")
+									.attr("src", getDir() +"/apps/"+appInfos[selected].name+"/data.js");
+				
+					// load screen
+					appScreen = svg.append("rect");
+					
+					// animate the screen
+					// when the animation is done, start the app
+					appScreen.attr("x", centerX)
+								.attr("y", centerY)
+								.attr("width", 0)
+								.attr("height", 0)
+								.attr("class", "transparent")
+								.transition()
+								.duration(4000)
+								.attr("x", 0)
+								.attr("y", 0)
+								.attr("width", width)
+								.attr("height", height)
+								.each("end", startApp);
+				}
+			}
+			
+			var tick;
+			
+			/**
+			* Start the app
+			*/
+			function startApp(){
+				app = new App(width, height, svg, system);
+				app.start();
+			
+				// set the state
+				currentState = STATES.APP_RUNNING;
+				
+				tick = setInterval(function(){checkApp();}, 1000)
+			}
+			
+			/**
+			* check if the app is still running
+			*/
+			function checkApp(){
+				// if app is closing
+				// call cleaner function of the app and close it
+				if (app.isExiting){
+					clearInterval(tick);
+					closeApp();
+				}
+			}
+			
+			/**
+			* Close the app.
+			*/
+			function closeApp(){
+				// set the state into closing app
+				currentState = STATES.APP_CLOSING;
+				app.exit();
+	
+				appScreen.transition()
+				.duration(4000)
+				.attr("x", centerX)
+				.attr("y", centerY)
+				.attr("width", 0)
+				.attr("height", 0)
+				.each("end", exitApp);
+			}
+			
+			/**
+			* Exit the app and go back to the menu screen.
+			*/
+			function exitApp(){
+				// set the state back into menu
+				currentState = STATES.MENU;
+				
+				showMenu();
+			}
+			
+			/** 
+			* Move the icon highlight to the direction specified.
+			* the direction is shown as an integer, 1 for moving down
+			* and -1 for moving up.
+			*/
+			function moveAppHL(i){
+				selected = selected + i
+				
+				// force the selected value between 0 and appInfos.length -1
+				if (selected < 0) selected = 0;
+				else if (selected >= appInfos.length) selected = appInfos.length-1;
+				
+				// set the offset of the menu to keep the selected app in the middle
+				var offsetY = selected - maxIcons + 2;
+				if (offsetY < 0) offsetY = 0;
+				else if (offsetY > appInfos.length - maxIcons) offsetY = appInfos.length - maxIcons;
+				
+				// animate the text
+				menuText.transition()
+					.text(toTitleCase(appsRef[selected].name))
+					.attr("y", menuY + (selected - offsetY + 1)*(menuPadding + systemIconSize) + menuPadding);
+				
+				// animate the icons and the selection
+				for (i = 0; i < appsRef.length; i++){
+					var iconX = menuPadding;
+					var iconY = (i - offsetY)*(menuPadding + systemIconSize);
+					
+					var iconSize = systemIconSize;
+					
+					if (i != selected){
+						iconX += iconSize*0.1;
+						iconY += iconSize*0.1;
+						iconSize *= 0.8;
+					}
+					
+					appInfos[i].image.transition()
+								.duration(400)
+								.attr("x", iconX)
+								.attr("y", iconY)
+								.attr("width", iconSize)
+								.attr("height", iconSize);
+				}
+			}
+			
+			/**
+			* Response to the user's key input.
+			*/
+			function response(){
+				var keyCode = getKey(d3.event);
+				if (currentState == STATES.MENU){
+					if (keyCode == "right"){
+						moveAppHL(1);
+					}
+					else if (keyCode == "left"){
+						moveAppHL(-1);
+					}
+					else if (keyCode == "up"){
+						moveAppHL(-1);
+					}
+					else if (keyCode == "down"){
+						moveAppHL(1);
+					}
+					else if (keyCode == "enter"){
+						loadApp();
+					}
+				}
+				else if (currentState == STATES.APP_RUNNING){
+					app.response(keyCode);
+				}
+			}
+		});
+		
+		// ============================== HELPER FUNCTIONS ===============================
+		
+		/**
+		* Turn the text into title case
+		* (first letter of each word is capitalized).
+		*/
+		function toTitleCase(str)
+		{
+			val = str;
+			newVal = "";
+			
+			val = val.split(" ");
+			
+			for(j = 0; j < val.length; j++) {
+				newVal += val[j].charAt(0).toUpperCase() + val[j].substring(1, val[j].length);
+				if (j != val.length - 1){
+					newVal += " ";
+				}
+			}
+			
+			return newVal;
+		}
+
+		/**
+		* Get the current time.
+		*/
+		function getTime(){
+			var date = new Date();
+			return ("0" + date.getHours()).slice(-2) +":"+("0" + date.getMinutes()).slice(-2);
+		}
+		
+		/**
+		* Get the directory of this file.
+		*/
+		function getDir(){
+			var loc = window.location.pathname;
+			return loc.substring(0, loc.lastIndexOf('/'));
+		}
+		
+		/**
+		* Return the key code in String from the event specified.
+		*/
+		function getKey(e){
+		//distinguish between IE's explicit event object (window.event) and Firefox's implicit.
+			var evtobj = window.event? event : e;
+			switch (e.keyCode) {
+			case 13:
+				return("enter");
+			case 27:
+				return("escape");
+			case 32:
+				return("space");
+			case 37:
+				return ("left");
+			case 38:
+				return ("up");
+			case 39:
+				return ("right");
+			case 40:
+				return ("down");
+			default:
+				return String.fromCharCode(evtobj.charCode);
+			}
+		}
+		</script>
+	</div>
+</body>
+</html>

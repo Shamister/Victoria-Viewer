@@ -1,0 +1,31 @@
+.axis path,
+.axis line {
+	fill: none;
+	stroke: #ffffff;
+	shape-rendering: crispEdges;
+}
+
+g text{
+	fill: #ffffff;
+}
+
+.axis line {
+	stroke: #ffffff;
+}
+
+.line {
+	fill: none;
+	stroke: #000000;
+	stroke-width: 1.5px;
+}
+
+path{
+	stroke:#000000;
+	stroke-width:2;
+	fill:none;
+}
+
+#titleText{
+	fill:#ffffff;
+	font-size:12pt;
+}

@@ -1,0 +1,136 @@
+var App = function(width, height, svg, system){
+	
+	var appObjects = [];
+	
+	/**
+	* A public function that starts the app.
+	* Before running the app, this function should be executed first.
+	*/	
+	this.start = function(){
+		var css = d3.select("head")
+					.append("link")
+					.attr("type", "text/css")
+					.attr("href", "apps/forex charts/style.css")
+					.attr("rel", "stylesheet");
+					
+		appObjects[appObjects.length] = css;
+					
+		var centerX = width/2;
+		var centerY = height/2;
+					
+		var margin = {top: 30, right: 20, bottom: 30, left: 50};
+		
+		var parseDate = d3.time.format("%Y.%m.%d").parse;
+		var gWidth = width -margin.right;
+		var gHeight = height-margin.bottom;
+		
+		d3.csv("data.csv", function(error, data2) {
+			data2.forEach(function(d) {
+				d.date = parseDate(d.date);
+				d.bid = +d.close;
+			});
+			
+			var x = d3.time.scale()
+					.domain(d3.extent(data2, function(d) { return d.date; }))
+					.range([margin.left, gWidth]);
+
+			var y = d3.scale.linear()
+					.domain(d3.extent(data2, function(d) { return d.close; }))
+					.range([gHeight, margin.top]);
+
+			var line = d3.svg.line()
+						.x(function(d) { return x(d.date); })
+						.y(function(d) { return y(d.close); });
+
+			var path = svg.append("path")
+						.attr("d", line(data2))
+			
+			appObjects[appObjects.length] = path;
+
+			var totalLength = path.node().getTotalLength();
+
+			path.attr("stroke-dasharray", totalLength + " " + totalLength)
+			.attr("stroke-dashoffset", totalLength)
+			.transition()
+			.duration(2000)
+			.ease("linear")
+			.attr("stroke-dashoffset", 0);
+			
+			var xAxis = d3.svg.axis()
+						.scale(x)
+						.orient("bottom");
+
+			var yAxis = d3.svg.axis()
+						.scale(y)
+						.orient("left");
+						
+					
+			var xArrow = svg.append("g")
+						  .attr("class", "x axis")
+						  .attr("transform", "translate(0, " + gHeight + ")")
+						  .call(xAxis);
+			  
+			appObjects[appObjects.length] = xArrow;
+
+			var yArrow = svg.append("g")
+						  .attr("class", "y axis")
+						  .attr("transform", "translate("+margin.left+", 0)")
+						  .call(yAxis)
+						  
+			appObjects[appObjects.length] = yArrow;
+			
+			var yArrowText = yArrow.append("text")
+							  .attr("transform", "rotate(-90), translate("+(-margin.top)+", 0)")
+							  .attr("y", 6)
+							  .attr("dy", ".71em")
+							  .style("text-anchor", "end")
+							  .text("close (NZD/USD)");
+						  
+			appObjects[appObjects.length] = yArrowText;
+			
+			var titleX = width - 120;
+			var titleY = system.layout.statusBarHeight + 20;
+			
+			var titleText = svg.append("text")
+									.text("NZD/USD Exchange Rate")
+									.attr("x", titleX)
+									.attr("y", titleY)
+									.attr("id", "titleText")
+									.attr("text-anchor", "middle");
+			
+			appObjects[appObjects.length] = titleText;
+
+		});
+	}
+	
+	/**
+	* Remove all app components, 
+	* such as text, image, and shape objects.
+	*/
+	function removeAppComponents(){
+		for (i = 0; i < appObjects.length; i++){
+			appObjects[i].remove();
+		}
+		appObjects = [];
+	}
+
+	/**
+	* Response to the user's key inputs.
+	* This will be called by the function in the main thread.
+	*/	
+	this.response = function(keyCode){
+		if (keyCode == "escape"){
+			this.isExiting = true;
+		}
+	}
+	
+	this.isExiting = false;
+	
+	/**
+	* Prepare to exit the game.
+	*/
+	this.exit = function(){
+		// clean app before exiting
+		removeAppComponents();
+	}
+}

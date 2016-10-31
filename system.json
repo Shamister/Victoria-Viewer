@@ -1,0 +1,50 @@
+{	"interface":{
+		"screen":{
+			"width":1000,
+			"height":480,
+			"brightness":0.7,
+			"background":"background.jpg"
+		},
+		"icon":{
+			"size":100
+		}
+	},
+	"connectivities":{
+		"wifi":true,
+		"flightMode":{
+			"isOn":false,
+			"connectivities":[
+				{"name":"wifi", "value":true}
+			]
+		}
+	},
+	"theme":{
+		"selectedIndex":0,
+		"resources":[
+			{"type":"system", "background":{"color":"#1e1e1e", "image":"None"}, "font":{"style":"Verdana", "size":10, "color":"#000000"}}
+		]
+	},
+	
+	"layout":{
+		"statusBarHeight":20,
+		"statusBarTimeXOffset":45,
+		"statusBarTimeY":15,
+		"statusBarBatteryTextXOffset":35,
+		"menuBarCornerRadius":20,
+		"menuBarHeight":380,
+		"menuBarMargin":20,
+		"menuBarPadding":20,
+		"menuBarTotalMaxIcons":3
+		
+	},
+	"apps":[
+		{"type":"system", "name":"messaging"},
+		{"type":"system", "name":"contacts"},
+		{"type":"system", "name":"browser"},
+		{"type":"system", "name":"calls"},
+		{"type":"system", "name":"camera"},
+		{"type":"system", "name":"settings"},
+		{"type":"user", "name":"forex charts"},
+		{"type":"user", "name":"space shooter"}
+	]
+}

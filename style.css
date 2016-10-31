@@ -1,0 +1,19 @@
+*{
+	margin:0;
+	padding:0;
+}
+
+body{
+	font-family:Verdana, Arial, san-serif;
+	font-size:10pt;
+	color:#000000;
+	margin:0 auto;
+}
+
+#viewer{
+	outline:0;
+}
+
+.transparent{
+	fill:rgba(255, 255, 255, 0.2);
+}

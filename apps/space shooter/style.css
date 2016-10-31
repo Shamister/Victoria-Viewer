@@ -1,0 +1,22 @@
+.titleText{
+	fill:#ffffff;
+	font-size:45pt;
+	text-shadow:4px 4px #000000;
+}
+
+.gameOverText{
+	fill:#ffffff;
+	font-size:28pt;
+	text-shadow:4px 4px #000000;
+}
+
+.menuText{
+	fill:#ffffff;
+	font-size:22pt;
+	text-shadow:4px 4px #000;
+}
+
+#background{
+	fill:#ee00ff;
+	opacity:0.1;
+}

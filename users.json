@@ -1,0 +1,18 @@
+[
+	{	"user":{
+			"firstName":"Scorpion",
+			"lastName":"Smith",
+			"age":30
+		},
+		"language":"EN-US",
+		"theme":"default",
+		"wallpaper":"None",
+		"admin":true,
+		"kidsMode":false,
+		"privilege":[
+			{"name":"installApp", "value":true},
+			{"name":"changeUsers", "value":true},
+			{"name":"deleteUsers", "value":true}
+		]
+	}
+]
